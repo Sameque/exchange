@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0-preview.2.24215.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OrderAccumulator.Domain\OrderAccumulator.Domain.csproj" />
+  </ItemGroup>
+</Project>
