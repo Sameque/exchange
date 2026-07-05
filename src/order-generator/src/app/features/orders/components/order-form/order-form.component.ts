@@ -1,8 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { OrderService } from '../../../../core/services/order.service';
+import { AssetService } from '../../../../core/services/asset.service';
 import { Order } from '../../../../core/models/order.model';
+import { Asset } from '../../../../core/models/asset.model';
 
 @Component({
   selector: 'app-order-form',
@@ -11,13 +13,18 @@ import { Order } from '../../../../core/models/order.model';
   templateUrl: './order-form.component.html',
   styleUrls: ['./order-form.component.css']
 })
-export class OrderFormComponent {
+export class OrderFormComponent implements OnInit {
   isLoading = signal(false);
   feedbackMessage = signal<{ text: string; type: 'success' | 'error' } | null>(null);
+  assets = signal<Asset[]>([]);
 
   orderForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private orderService: OrderService) {
+  constructor(
+    private fb: FormBuilder,
+    private orderService: OrderService,
+    private assetService: AssetService
+  ) {
     this.orderForm = this.fb.group({
       symbol: ['', [Validators.required]],
       side: ['Compra', [Validators.required]],
@@ -34,6 +41,14 @@ export class OrderFormComponent {
         this.priceStepValidator(0.01)
       ]]
     });
+  }
+
+  ngOnInit(): void {
+    this.loadAssets();
+  }
+
+  private loadAssets(): void {
+    this.assetService.getAssets().subscribe(data => this.assets.set(data));
   }
 
   private priceStepValidator(step: number) {

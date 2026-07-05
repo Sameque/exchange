@@ -12,9 +12,9 @@
         <div class="select-wrapper">
           <select id="symbol" formControlName="symbol">
             <option value="" disabled>Selecione o ativo</option>
-            <option value="PETR4">PETR4 (Petrobras)</option>
-            <option value="VALE3">VALE3 (Vale)</option>
-            <option value="VIIA4">VIIA4 (Via)</option>
+            @for (asset of assets(); track asset.symbol) {
+              <option [value]="asset.symbol">{{ asset.symbol }} ({{ asset.name }})</option>
+            }
           </select>
         </div>
         @if (orderForm.get('symbol')?.touched && orderForm.get('symbol')?.invalid) {
