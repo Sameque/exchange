@@ -13,8 +13,8 @@ public class FixAcceptor : MessageCracker, IApplication
 
     public FixAcceptor(IServiceProvider serviceProvider, ILogger<FixAcceptor> logger)
     {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public void FromApp(QuickFix.Message message, SessionID sessionID)
@@ -29,8 +29,8 @@ public class FixAcceptor : MessageCracker, IApplication
 
             var request = new OrderRequest(
                 Symbol: orderMsg.Symbol.Value,
-                Quantity: (decimal)orderMsg.OrderQty.Value,
-                Price: (decimal)orderMsg.Price.Value,
+                Quantity: orderMsg.OrderQty.Value,
+                Price: orderMsg.Price.Value,
                 Side: orderMsg.Side.Value == Side.BUY ? "buy" : "sell"
             );
 

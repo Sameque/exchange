@@ -10,7 +10,7 @@ public class OrderRepository : IOrderRepository
 
     public OrderRepository(OrderAccumulatorDbContext context)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
     public async Task AddOrderAsync(Order order)
@@ -24,10 +24,5 @@ public class OrderRepository : IOrderRepository
         return await _context.Orders
             .Where(o => o.Symbol == symbol)
             .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Symbol>> GetSymbolsAsync()
-    {
-        return await _context.Symbols.ToListAsync();
     }
 }

@@ -6,5 +6,4 @@ public interface IOrderRepository
 {
     Task AddOrderAsync(Order order);
     Task<IEnumerable<Order>> GetOrdersBySymbolAsync(string symbol);
-    Task<IEnumerable<Symbol>> GetSymbolsAsync();
 }

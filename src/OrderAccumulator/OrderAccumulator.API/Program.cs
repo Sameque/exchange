@@ -18,8 +18,6 @@ builder.Services.AddSingleton<IExposureRepository, ExposureRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
 builder.Services.AddScoped<ProcessOrderUseCase>();
-builder.Services.AddScoped<GetSymbolsUseCase>();
-builder.Services.AddScoped<GetExposureUseCase>();
 
 builder.Services.AddSingleton<FixAcceptor>();
 
@@ -29,22 +27,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<OrderAccumulatorDbContext>();
     db.Database.EnsureCreated();
-    if (!db.Symbols.Any())
-    {
-        db.Symbols.AddRange(
-            new OrderAccumulator.Domain.Entities.Symbol { Ticker = "PETR4", Description = "Petrobras" },
-            new OrderAccumulator.Domain.Entities.Symbol { Ticker = "VALE3", Description = "Vale" },
-            new OrderAccumulator.Domain.Entities.Symbol { Ticker = "ITUB4", Description = "Itaú" }
-        );
-        db.SaveChanges();
-    }
 }
-
-app.MapGet("/api/symbols", async (GetSymbolsUseCase useCase) =>
-    Results.Ok(await useCase.ExecuteAsync()));
-
-app.MapGet("/api/exposure", async (GetExposureUseCase useCase) =>
-    Results.Ok(await useCase.ExecuteAsync()));
 
 var fixAcceptor = app.Services.GetRequiredService<FixAcceptor>();
 var settings = new SessionSettings("config/client.cfg");

@@ -12,23 +12,23 @@ public class ProcessOrderUseCase
 
     public ProcessOrderUseCase(IOrderRepository repository, IExposureRepository exposureRepository)
     {
-        _repository = repository;
-        _exposureRepository = exposureRepository;
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _exposureRepository = exposureRepository ?? throw new ArgumentNullException(nameof(exposureRepository));
     }
 
     public async Task<OrderResponse> ExecuteAsync(OrderRequest request)
     {
-        // Simple validation
         if (string.IsNullOrWhiteSpace(request.Symbol) || request.Quantity <= 0 || request.Price <= 0)
             return new OrderResponse(false, "Invalid order parameters.");
 
-        //validar se o price é maior que  1000
         if (request.Price > 1000)
+            return new OrderResponse(false, $"Price exceeds the maximum allowed value of 1000.");
+
+        if (request.Quantity > 100000)
             return new OrderResponse(false, $"Price exceeds the maximum allowed value of 1000.");
 
         var side = request.Side.ToLower() == "buy" ? OrderSide.Buy : OrderSide.Sell;
 
-        // Exposure validation
         var symbol = request.Symbol.ToUpper();
         var orderValue = request.Price * request.Quantity;
         var delta = side == OrderSide.Buy ? orderValue : -orderValue;
