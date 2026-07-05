@@ -2,7 +2,6 @@ using OrderGenerator.API.Middleware;
 using OrderGenerator.Application.UseCases;
 using OrderGenerator.Infrastructure.Configuration;
 using OrderGenerator.Infrastructure.Exchange;
-using OrderGenerator.Infrastructure.Extensions;
 using QuickFix;
 using QuickFix.Logger;
 using QuickFix.Store;
@@ -14,11 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ExchangeSettings>(
     builder.Configuration.GetSection(ExchangeSettings.SectionName));
 
-builder.Services.AddInfrastructure();
-
 builder.Services.AddScoped<PlaceOrderUseCase>();
 builder.Services.AddScoped<GetSymbolsUseCase>();
-builder.Services.AddScoped<GetExposureUseCase>();
 
 builder.Services
     .AddControllers()

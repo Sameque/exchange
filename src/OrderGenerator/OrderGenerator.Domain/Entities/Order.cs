@@ -8,7 +8,7 @@ namespace OrderGenerator.Domain.Entities;
 public class Order
 {
     public Guid Id { get; private set; }
-    public string Symbol { get; private set; }
+    public string Ticker { get; private set; }
     public OrderSide Side { get; private set; }
     public int Quantity { get; private set; }
     public decimal Price { get; private set; }
@@ -18,14 +18,14 @@ public class Order
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private Order() { Symbol = string.Empty; }
+    private Order() { Ticker = string.Empty; }
 
     public static Order Create(string symbol, OrderSide side, int quantity, decimal price)
     {
         return new Order
         {
             Id = Guid.NewGuid(),
-            Symbol = symbol.ToUpperInvariant(),
+            Ticker = symbol.ToUpperInvariant(),
             Side = side,
             Quantity = quantity,
             Price = price,
