@@ -202,7 +202,7 @@ public class FixApplication : MessageCracker, IApplication
                 var status = report.OrdStatus.Value;
                 if (status == QuickFix.Fields.OrdStatus.REJECTED)
                 {
-                    string reason = report.OrdRejReason.Value.ToString();
+                    string reason = report.Text.Value.ToString();
                     order.Reject(reason);
                 }
                 else if (status == QuickFix.Fields.OrdStatus.NEW || status == QuickFix.Fields.OrdStatus.FILLED)

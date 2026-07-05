@@ -17,6 +17,17 @@ builder.Services.Configure<ExchangeSettings>(
 
 builder.Services.AddInfrastructure();
 
+builder.Services.AddCors(options =>
+{
+   options.AddPolicy("AllowAngularDev",
+       policy =>
+       {
+           policy.WithOrigins("http://localhost:4200")
+                 .AllowAnyHeader()
+                 .AllowAnyMethod();
+       });
+});
+
 builder.Services.AddScoped<PlaceOrderUseCase>();
 
 builder.Services
@@ -81,7 +92,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowAngularDev");
 app.MapControllers();
 
 app.Run();
