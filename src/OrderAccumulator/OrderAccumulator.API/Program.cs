@@ -14,20 +14,19 @@ builder.Services.AddDbContext<OrderAccumulatorDbContext>(options =>
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IExposureRepository, ExposureRepository>();
-
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-
 builder.Services.AddScoped<ProcessOrderUseCase>();
+builder.Services.AddScoped<ExposureInitializer>();
 
 builder.Services.AddSingleton<FixAcceptor>();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<OrderAccumulatorDbContext>();
-    db.Database.EnsureCreated();
-}
+    using (var scope = app.Services.CreateScope())
+    {
+        var initializer = scope.ServiceProvider.GetRequiredService<ExposureInitializer>();
+        await initializer.InitializeAsync();
+    }
 
 var fixAcceptor = app.Services.GetRequiredService<FixAcceptor>();
 var settings = new SessionSettings("config/client.cfg");
