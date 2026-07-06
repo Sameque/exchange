@@ -36,7 +36,6 @@ public class FixAcceptor : MessageCracker, IApplication
 
             var response = useCase.ExecuteAsync(request).GetAwaiter().GetResult();
 
-
             SendExecutionReport(sessionID, orderMsg, response.Accepted, response.Message);
         }
     }
