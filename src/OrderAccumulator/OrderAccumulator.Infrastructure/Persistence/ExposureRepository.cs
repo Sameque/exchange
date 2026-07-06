@@ -1,45 +1,36 @@
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 using OrderAccumulator.Domain.Interfaces;
-using System.Threading.Tasks;
 
 namespace OrderAccumulator.Infrastructure.Persistence;
 
 public class ExposureRepository : IExposureRepository
 {
-    private readonly IMemoryCache _cache;
-    private readonly object _lock = new();
+    private readonly IDistributedCache _cache;
     private const string CacheKeyPrefix = "exposure_";
 
-    public ExposureRepository(IMemoryCache cache)
+    public ExposureRepository(IDistributedCache cache)
     {
         _cache = cache;
     }
 
-    public Task<decimal> GetExposureAsync(string symbol)
+    public async Task<decimal> GetExposureAsync(string symbol)
     {
         string key = $"{CacheKeyPrefix}{symbol.ToUpper()}";
-        
-        if (_cache.TryGetValue(key, out decimal exposure))
-            return Task.FromResult(exposure);
+        var value = await _cache.GetStringAsync(key);
 
-        return Task.FromResult(0m);
+        if (decimal.TryParse(value, out decimal exposure))
+            return exposure;
+
+        return 0m;
     }
 
-    public Task UpdateExposureAsync(string symbol, decimal delta)
+    public async Task UpdateExposureAsync(string symbol, decimal delta)
     {
         string key = $"{CacheKeyPrefix}{symbol.ToUpper()}";
 
-        lock (_lock)
-        {
-            decimal currentExposure = 0;
-            if (_cache.TryGetValue(key, out decimal existingValue))
-            {
-                currentExposure = existingValue;
-            }
+        decimal currentExposure = await GetExposureAsync(symbol);
+        decimal newValue = currentExposure + delta;
 
-            _cache.Set(key, currentExposure + delta);
-        }
-
-        return Task.CompletedTask;
+        await _cache.SetStringAsync(key, newValue.ToString());
     }
 }

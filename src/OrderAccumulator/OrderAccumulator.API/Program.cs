@@ -6,13 +6,17 @@ using OrderAccumulator.API.Fix;
 using QuickFix;
 using QuickFix.Store;
 using QuickFix.Logger;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<OrderAccumulatorDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddMemoryCache();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+});
 builder.Services.AddSingleton<IExposureRepository, ExposureRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<ProcessOrderUseCase>();
