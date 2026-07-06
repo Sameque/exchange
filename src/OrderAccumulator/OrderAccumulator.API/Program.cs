@@ -6,7 +6,6 @@ using OrderAccumulator.API.Fix;
 using QuickFix;
 using QuickFix.Store;
 using QuickFix.Logger;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 

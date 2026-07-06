@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderAccumulator.Domain.Enums;
 using OrderAccumulator.Domain.Interfaces;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace OrderAccumulator.Infrastructure.Persistence;
 

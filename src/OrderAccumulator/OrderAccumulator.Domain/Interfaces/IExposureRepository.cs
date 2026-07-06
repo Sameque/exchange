@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace OrderAccumulator.Domain.Interfaces;
 
 public interface IExposureRepository
