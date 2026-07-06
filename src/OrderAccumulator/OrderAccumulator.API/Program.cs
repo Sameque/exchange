@@ -10,7 +10,7 @@ using QuickFix.Logger;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<OrderAccumulatorDbContext>(options =>
-    options.UseSqlite("Data Source=orders.db"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IExposureRepository, ExposureRepository>();
