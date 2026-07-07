@@ -1,0 +1,24 @@
+# Auto-provisioned Grafana datasources. Grafana reads this on startup so
+# datasources are ready before the user logs in.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true
+    jsonData:
+      httpMethod: GET
+      tracesToLogsV2:
+        # Wired to Loki in PR 3. For now it just won't resolve.
+        datasourceUid: ""
+      serviceMap:
+        datasourceUid: ""

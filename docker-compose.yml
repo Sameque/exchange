@@ -83,6 +83,61 @@ services:
       timeout: 2s
       retries: 5
 
+  # ── Observability stack (PR 1: traces + metrics) ──────────────────────
+  # Receives OTLP from the .NET services (added in PR 2) and exports
+  # traces to Tempo and metrics via its own Prometheus pull endpoint.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.107.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus pull endpoint (scraped by Prometheus)
+    restart: unless-stopped
+
+  # Distributed tracing storage; queried by Grafana via the Tempo datasource.
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo/config.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"
+    restart: unless-stopped
+
+  # Metrics scraper; pulls from OTel collector + .NET /metrics (PR 2).
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  # Visualization. Datasources (Prometheus + Tempo) are auto-provisioned.
+  # Default credentials: admin / admin (change in production).
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+    restart: unless-stopped
+
 volumes:
   pgdata_ordergenerator:
   pgdata_orderaccumulator:
+  prometheus_data:
+  tempo_data:
+  grafana_data:

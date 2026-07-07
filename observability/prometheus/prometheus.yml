@@ -1,0 +1,27 @@
+# Prometheus - scrapes metrics from the OTel Collector's prometheus exporter
+# and from the .NET services' own /metrics endpoints (added in PR 2).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # OpenTelemetry Collector's Prometheus pull endpoint
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:8889"]
+        labels:
+          service: otel-collector
+
+  # ASP.NET Core services expose /metrics via prometheus-net (added in PR 2).
+  # These targets are declared here so PR 2 only needs to add the
+  # prometheus-net.AspNetCore package + MapMetrics() — no compose changes.
+  - job_name: order-generator
+    static_configs:
+      - targets: ["order-generator-api:8080"]
+        labels:
+          service: order-generator
+  - job_name: order-accumulator
+    static_configs:
+      - targets: ["order-accumulator-api:8080"]
+        labels:
+          service: order-accumulator
