@@ -79,5 +79,21 @@ docker compose logs -f order-accumulator-api db-orderaccumulator redis
 docker compose down -v
 ```
 
+## Observability
+
+Stack self-hosted de observabilidade baseado em **OpenTelemetry + Grafana LGTM** (Loki, Grafana, Tempo, Prometheus). Tudo sobe junto com `docker compose up`.
+
+| Componente | Porta | URL |
+|---|---|---|
+| Grafana | 3000 | http://localhost:3000 (admin / admin) |
+| Prometheus | 9090 | http://localhost:9090 |
+| Tempo (traces) | 3200 | http://localhost:3200 |
+| OTel Collector (OTLP) | 4317 (gRPC) / 4318 (HTTP) | receiver interno |
+
+- O **OpenTelemetry Collector** recebe OTLP dos serviços .NET e roteia traces para o **Tempo**, metrics para o **Prometheus** (via pull endpoint em `:8889`) e logs para o **Loki** (PR 3).
+- Datasources do **Grafana** (Prometheus + Tempo) são auto-provisionados a partir de `observability/grafana/provisioning/`.
+- Os volumes `prometheus_data`, `tempo_data` e `grafana_data` persistem dados entre `docker compose down` (use `down -v` para limpar).
+- A instrumentação OpenTelemetry nos serviços .NET é adicionada no **PR 2**; o roteamento de logs via Serilog para Loki vem no **PR 3**.
+
 ---
 > This is a challenge by [Coodesh](https://coodesh.com/)
