@@ -1,0 +1,11 @@
+**/.git
+**/.vscode
+**/.idea
+**/bin
+**/obj
+**/out
+
+# Ignore frontend artifacts when building backend APIs
+src/order-generator/node_modules
+src/order-generator/dist
+src/order-generator/.angular
