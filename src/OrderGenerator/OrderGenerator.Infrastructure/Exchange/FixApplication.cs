@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Logging;
 using OrderGenerator.Domain.Entities;
 using OrderGenerator.Domain.Enums;
+using OrderGenerator.Domain.Interfaces;
 using QuickFix;
 using System.Collections.Concurrent;
 
 namespace OrderGenerator.Infrastructure.Exchange;
 
-public class FixApplication : MessageCracker, IApplication
+public class FixApplication : MessageCracker, IApplication, IFixApplication
 {
     public bool Connected => _session is not null;
 

@@ -3,6 +3,7 @@ using OpenTelemetry.Shared;
 using OrderGenerator.API.Fix;
 using OrderGenerator.API.Middleware;
 using OrderGenerator.Application.UseCases;
+using OrderGenerator.Domain.Interfaces;
 using OrderGenerator.Infrastructure.Exchange;
 using OrderGenerator.Infrastructure.Extensions;
 using OrderGenerator.Infrastructure.Persistence;
@@ -52,6 +53,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddSingleton<FixApplication>();
+builder.Services.AddSingleton<IFixApplication>(sp => sp.GetRequiredService<FixApplication>());
 builder.Services.AddHostedService<FixHostedService>();
 
 var app = builder.Build();

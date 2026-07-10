@@ -1,7 +1,6 @@
 using OrderGenerator.Domain.DTOs;
 using OrderGenerator.Domain.Entities;
 using OrderGenerator.Domain.Interfaces;
-using OrderGenerator.Infrastructure.Exchange;
 
 namespace OrderGenerator.Application.UseCases;
 
@@ -12,11 +11,11 @@ namespace OrderGenerator.Application.UseCases;
 /// </summary>
 public sealed class PlaceOrderUseCase
 {
-    private readonly FixApplication _fixApplication;
+    private readonly IFixApplication _fixApplication;
     private readonly IOrderRepository _orderRepository;
 
     public PlaceOrderUseCase(
-                FixApplication fixApplication, 
+                IFixApplication fixApplication, 
                 IOrderRepository orderRepository)
     {
         _fixApplication = fixApplication
@@ -29,6 +28,8 @@ public sealed class PlaceOrderUseCase
                         PlaceOrderRequest request,
                         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var order = Order.Create(request.Ticker, request.Side, request.Quantity, request.Price);
 
         await _orderRepository.AddAsync(order, cancellationToken);
