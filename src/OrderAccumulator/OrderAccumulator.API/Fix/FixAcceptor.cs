@@ -19,24 +19,33 @@ public class FixAcceptor : MessageCracker, IApplication
 
     public void FromApp(QuickFix.Message message, SessionID sessionID)
     {
-        if (message is NewOrderSingle orderMsg)
+        try
         {
-            _logger.LogInformation("FIX Order received: {Symbol}, {Qty}, {Price}",
-                orderMsg.Symbol.Value, orderMsg.OrderQty.Value, orderMsg.Price.Value);
+            if (message is NewOrderSingle orderMsg)
+            {
+                _logger.LogInformation("FIX Order received: {Symbol}, {Qty}, {Price}",
+                    orderMsg.Symbol.Value, orderMsg.OrderQty.Value, orderMsg.Price.Value);
 
-            using var scope = _serviceProvider.CreateScope();
-            var useCase = scope.ServiceProvider.GetRequiredService<ProcessOrderUseCase>();
+                using var scope = _serviceProvider.CreateScope();
+                var useCase = scope.ServiceProvider.GetRequiredService<ProcessOrderUseCase>();
 
-            var request = new OrderRequest(
-                Symbol: orderMsg.Symbol.Value,
-                Quantity: orderMsg.OrderQty.Value,
-                Price: orderMsg.Price.Value,
-                Side: orderMsg.Side.Value == Side.BUY ? "buy" : "sell"
-            );
+                var request = new OrderRequest(
+                    Symbol: orderMsg.Symbol.Value,
+                    Quantity: orderMsg.OrderQty.Value,
+                    Price: orderMsg.Price.Value,
+                    Side: orderMsg.Side.Value == Side.BUY ? "buy" : "sell"
+                );
 
-            var response = useCase.ExecuteAsync(request).GetAwaiter().GetResult();
+                var response = Task.Run(() => useCase.ExecuteAsync(request)).GetAwaiter().GetResult();
 
-            SendExecutionReport(sessionID, orderMsg, response.Accepted, response.Message);
+                SendExecutionReport(sessionID, orderMsg, response.Accepted, response.Message);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing FIX order");
+            if (message is NewOrderSingle orderMsg)
+                SendExecutionReport(sessionID, orderMsg, false, $"Internal error: {ex.Message}");
         }
     }
 
@@ -71,13 +80,13 @@ public class FixAcceptor : MessageCracker, IApplication
     }
 
     public void OnCreate(SessionID sessionID)
-                    => Console.WriteLine($"[OnCreate] {sessionID}");
+                    => _logger.LogInformation("[OnCreate] {SessionId}", sessionID);
 
     public void OnLogon(SessionID sessionId)
-                    => Console.WriteLine($"[OnLogon] {sessionId}");
+                    => _logger.LogInformation("[OnLogon] {SessionId}", sessionId);
 
     public void OnLogout(SessionID sessionId)
-                    => Console.WriteLine($"[OnLogout] {sessionId}");
+                    => _logger.LogInformation("[OnLogout] {SessionId}", sessionId);
 
     public void FromAdmin(QuickFix.Message message, SessionID sessionId)
                     => PrintMessage("FROM ADMIN", message);
@@ -88,9 +97,9 @@ public class FixAcceptor : MessageCracker, IApplication
     public void ToApp(QuickFix.Message message, SessionID sessionId)
                     => PrintMessage("TO APP", message);
 
-    public static void PrintMessage(string direction, QuickFix.Message fixMessage)
+    private void PrintMessage(string direction, QuickFix.Message fixMessage)
     {
-        Console.WriteLine($"[{direction}]");
+        _logger.LogInformation("[{Direction}]", direction);
 
         var message = fixMessage.ToString();
         var fields = message.Split('\u0001', StringSplitOptions.RemoveEmptyEntries);
@@ -117,9 +126,8 @@ public class FixAcceptor : MessageCracker, IApplication
                 displayValue = $"{value} ({description})";
             }
 
-            Console.WriteLine($"{tag,-3} {name,-20} = {displayValue}");
+            _logger.LogInformation("{Tag,-3} {Name,-20} = {Value}", tag, name, displayValue);
         }
-        Console.WriteLine("");
     }
 
     private static readonly Dictionary<int, Dictionary<string, string>> FixEnums = new()
