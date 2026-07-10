@@ -13,16 +13,16 @@ public class OrderRepository : IOrderRepository
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public async Task AddOrderAsync(Order order)
+    public async Task AddOrderAsync(Order order, CancellationToken cancellationToken = default)
     {
-        await _context.Orders.AddAsync(order);
-        await _context.SaveChangesAsync();
+        await _context.Orders.AddAsync(order, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Order>> GetOrdersBySymbolAsync(string symbol)
+    public async Task<IEnumerable<Order>> GetOrdersBySymbolAsync(string symbol, CancellationToken cancellationToken = default)
     {
         return await _context.Orders
             .Where(o => o.Symbol == symbol)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }

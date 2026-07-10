@@ -4,6 +4,6 @@ namespace OrderAccumulator.Domain.Interfaces;
 
 public interface IOrderRepository
 {
-    Task AddOrderAsync(Order order);
-    Task<IEnumerable<Order>> GetOrdersBySymbolAsync(string symbol);
+    Task AddOrderAsync(Order order, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Order>> GetOrdersBySymbolAsync(string symbol, CancellationToken cancellationToken = default);
 }
