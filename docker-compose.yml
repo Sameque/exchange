@@ -8,13 +8,30 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=db-ordergenerator;Port=5432;Database=ordergenerator;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=db-ordergenerator;Port=5432;Database=ordergenerator;Username=postgres;Password=${DB_PASSWORD_ORDERGEN:-postgres}
       - OpenTelemetry__Endpoint=http://otel-collector:4317
     depends_on:
-      - db-ordergenerator
-      - otel-collector
-    command: ["sh", "-c", "until pg_isready -h db-ordergenerator -p 5432 -U postgres; do sleep 1; done; dotnet OrderGenerator.API.dll"]
+      db-ordergenerator:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - fix_store_ordergen:/app/store
+      - fix_log_ordergen:/app/log
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wc -c /app/*.dll || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: on-failure
+    networks:
+      - challenge-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   order-accumulator-api:
     build:
@@ -26,14 +43,33 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=db-orderaccumulator;Port=5432;Database=orderaccumulator;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=db-orderaccumulator;Port=5432;Database=orderaccumulator;Username=postgres;Password=${DB_PASSWORD_ORDERACC:-postgres}
       - ConnectionStrings__Redis=redis:6379
       - OpenTelemetry__Endpoint=http://otel-collector:4317
     depends_on:
-      - db-orderaccumulator
-      - redis
-      - otel-collector
+      db-orderaccumulator:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - fix_store_orderacc:/app/store
+      - fix_log_orderacc:/app/log
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wc -c /app/*.dll || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: on-failure
+    networks:
+      - challenge-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   order-generator-ui:
     build:
@@ -42,14 +78,23 @@ services:
     ports:
       - "4200:80"
     depends_on:
-      - order-generator-api
-      - order-accumulator-api
+      order-generator-api:
+        condition: service_started
+      order-accumulator-api:
+        condition: service_started
+    networks:
+      - challenge-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
 
   db-ordergenerator:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD_ORDERGEN:-postgres}
       POSTGRES_DB: ordergenerator
     ports:
       - "5433:5432"
@@ -60,12 +105,14 @@ services:
       retries: 5
     volumes:
       - pgdata_ordergenerator:/var/lib/postgresql/data
+    networks:
+      - challenge-net
 
   db-orderaccumulator:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD_ORDERACC:-postgres}
       POSTGRES_DB: orderaccumulator
     ports:
       - "5434:5432"
@@ -76,6 +123,8 @@ services:
       retries: 5
     volumes:
       - pgdata_orderaccumulator:/var/lib/postgresql/data
+    networks:
+      - challenge-net
 
   redis:
     image: redis:7-alpine
@@ -86,6 +135,8 @@ services:
       interval: 5s
       timeout: 2s
       retries: 5
+    networks:
+      - challenge-net
 
   # ── Observability stack (PR 1: traces + metrics) ──────────────────────
   # Receives OTLP from the .NET services (added in PR 2) and exports
@@ -100,6 +151,8 @@ services:
       - "4318:4318"   # OTLP HTTP
       - "8889:8889"   # Prometheus pull endpoint (scraped by Prometheus)
     restart: unless-stopped
+    networks:
+      - challenge-net
 
   # Distributed tracing storage; queried by Grafana via the Tempo datasource.
   tempo:
@@ -111,6 +164,8 @@ services:
     ports:
       - "3200:3200"
     restart: unless-stopped
+    networks:
+      - challenge-net
 
   # Metrics scraper; pulls from OTel collector + .NET /metrics (PR 2).
   prometheus:
@@ -121,14 +176,16 @@ services:
     ports:
       - "9090:9090"
     restart: unless-stopped
+    networks:
+      - challenge-net
 
   # Visualization. Datasources (Prometheus + Tempo) are auto-provisioned.
   # Default credentials: admin / admin (change in production).
   grafana:
     image: grafana/grafana:11.2.0
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
@@ -138,6 +195,8 @@ services:
       - prometheus
       - tempo
     restart: unless-stopped
+    networks:
+      - challenge-net
 
 volumes:
   pgdata_ordergenerator:
@@ -145,3 +204,11 @@ volumes:
   prometheus_data:
   tempo_data:
   grafana_data:
+  fix_store_ordergen:
+  fix_log_ordergen:
+  fix_store_orderacc:
+  fix_log_orderacc:
+
+networks:
+  challenge-net:
+    driver: bridge
