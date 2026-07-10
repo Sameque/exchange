@@ -1,4 +1,5 @@
 using OrderGenerator.API.Middleware;
+using OrderGenerator.API.Observability;
 using OrderGenerator.Application.UseCases;
 using OrderGenerator.Infrastructure.Configuration;
 using OrderGenerator.Infrastructure.Exchange;
@@ -16,6 +17,8 @@ builder.Services.Configure<ExchangeSettings>(
     builder.Configuration.GetSection(ExchangeSettings.SectionName));
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.AddOpenTelemetry();
 
 builder.Services.AddCors(options =>
 {
@@ -94,5 +97,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngularDev");
 app.MapControllers();
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();

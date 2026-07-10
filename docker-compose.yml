@@ -9,8 +9,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=db-ordergenerator;Port=5432;Database=ordergenerator;Username=postgres;Password=postgres
+      - OpenTelemetry__Endpoint=http://otel-collector:4317
     depends_on:
       - db-ordergenerator
+      - otel-collector
     command: ["sh", "-c", "until pg_isready -h db-ordergenerator -p 5432 -U postgres; do sleep 1; done; dotnet OrderGenerator.API.dll"]
     restart: on-failure
 
@@ -26,9 +28,11 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=db-orderaccumulator;Port=5432;Database=orderaccumulator;Username=postgres;Password=postgres
       - ConnectionStrings__Redis=redis:6379
+      - OpenTelemetry__Endpoint=http://otel-collector:4317
     depends_on:
       - db-orderaccumulator
       - redis
+      - otel-collector
     restart: on-failure
 
   order-generator-ui:

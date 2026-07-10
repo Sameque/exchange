@@ -3,11 +3,14 @@ using OrderAccumulator.Application.UseCases;
 using OrderAccumulator.Domain.Interfaces;
 using OrderAccumulator.Infrastructure.Persistence;
 using OrderAccumulator.API.Fix;
+using OrderAccumulator.API.Observability;
 using QuickFix;
 using QuickFix.Store;
 using QuickFix.Logger;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddOpenTelemetry();
 
 builder.Services.AddDbContext<OrderAccumulatorDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -43,5 +46,7 @@ var initiator = new ThreadedSocketAcceptor(
                         logFactory);
 
 initiator.Start();
+
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();
