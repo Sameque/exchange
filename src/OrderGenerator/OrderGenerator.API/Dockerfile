@@ -6,11 +6,13 @@ COPY src/OrderGenerator/OrderGenerator.API/*.csproj src/OrderGenerator/OrderGene
 COPY src/OrderGenerator/OrderGenerator.Application/*.csproj src/OrderGenerator/OrderGenerator.Application/
 COPY src/OrderGenerator/OrderGenerator.Infrastructure/*.csproj src/OrderGenerator/OrderGenerator.Infrastructure/
 COPY src/OrderGenerator/OrderGenerator.Domain/*.csproj src/OrderGenerator/OrderGenerator.Domain/
+COPY src/Shared/OpenTelemetry.Shared/*.csproj src/Shared/OpenTelemetry.Shared/
 
 RUN dotnet restore src/OrderGenerator/OrderGenerator.API/OrderGenerator.API.csproj
 
 # Copy the rest of the source code
 COPY src/OrderGenerator src/OrderGenerator
+COPY src/Shared/OpenTelemetry.Shared src/Shared/OpenTelemetry.Shared
 
 WORKDIR /src/src/OrderGenerator/OrderGenerator.API
 RUN dotnet build -c Release -o /app/build
