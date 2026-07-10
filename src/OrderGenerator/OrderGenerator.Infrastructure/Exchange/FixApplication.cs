@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OrderGenerator.Domain.Entities;
 using OrderGenerator.Domain.Enums;
 using QuickFix;
@@ -10,16 +11,18 @@ public class FixApplication : MessageCracker, IApplication
     public bool Connected => _session is not null;
 
     private Session? _session;
+    private readonly ILogger<FixApplication> _logger;
     private readonly ConcurrentDictionary<Guid, (Order Order, TaskCompletionSource<Order> Tcs)> _pendingOrders = new();
 
-    public FixApplication()
+    public FixApplication(ILogger<FixApplication> logger)
     {
         _session = null;
+        _logger = logger;
     }
 
     public async Task<Order> SendOrder(Order order)
     {
-        Console.WriteLine($"[SendOrder] Sending order {order.Id}");
+        _logger.LogInformation("[SendOrder] Sending order {OrderId}", order.Id);
 
         if (_session == null)
             throw new InvalidOperationException("FIX session is not established.");
@@ -37,7 +40,17 @@ public class FixApplication : MessageCracker, IApplication
         newOrderSingle.Set(new QuickFix.Fields.OrderQty(order.Quantity));
         newOrderSingle.Set(new QuickFix.Fields.Price(order.Price));
 
-        _session.Send(newOrderSingle);
+        try
+        {
+            _session.Send(newOrderSingle);
+        }
+        catch (Exception ex)
+        {
+            _pendingOrders.TryRemove(order.Id, out _);
+            _logger.LogError(ex, "Failed to send FIX order {OrderId}", order.Id);
+            order.Reject($"Failed to send: {ex.Message}");
+            return order;
+        }
 
         var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30));
         var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
@@ -54,15 +67,15 @@ public class FixApplication : MessageCracker, IApplication
 
     public void OnCreate(SessionID sessionId)
     {
-        Console.WriteLine($"[OnCreate] {sessionId}");
+        _logger.LogInformation("[OnCreate] {SessionId}", sessionId);
         _session = Session.LookupSession(sessionId);
     }
 
     public void OnLogon(SessionID sessionId)
-                    => Console.WriteLine($"[OnLogon] {sessionId}");
+                    => _logger.LogInformation("[OnLogon] {SessionId}", sessionId);
 
     public void OnLogout(SessionID sessionId)
-                    => Console.WriteLine($"[OnLogout] {sessionId}");
+                    => _logger.LogInformation("[OnLogout] {SessionId}", sessionId);
 
     public void FromAdmin(QuickFix.Message message, SessionID sessionId)
                     => PrintMessage("FROM ADMIN", message);
@@ -75,9 +88,10 @@ public class FixApplication : MessageCracker, IApplication
 
     public void ToApp(QuickFix.Message message, SessionID sessionId)
                     => PrintMessage("TO APP", message);
-    public static void PrintMessage(string direction, QuickFix.Message fixMessage)
+
+    private void PrintMessage(string direction, QuickFix.Message fixMessage)
     {
-        Console.WriteLine($"[{direction}]");
+        _logger.LogInformation("[{Direction}]", direction);
 
         var message = fixMessage.ToString();
         var fields = message.Split('', StringSplitOptions.RemoveEmptyEntries);
@@ -104,9 +118,8 @@ public class FixApplication : MessageCracker, IApplication
                 displayValue = $"{value} ({description})";
             }
 
-            Console.WriteLine($"{tag,-3} {name,-20} = {displayValue}");
+            _logger.LogInformation("{Tag,-3} {Name,-20} = {Value}", tag, name, displayValue);
         }
-        Console.WriteLine("");
     }
 
     private static readonly Dictionary<int, Dictionary<string, string>> FixEnums = new()
