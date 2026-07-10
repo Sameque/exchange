@@ -1,6 +1,6 @@
 export interface Order {
   ticker: string;
-  side: 'Compra' | 'Venda';
+  side: 'BUY' | 'SELL';
   quantity: number;
   price: number;
 }

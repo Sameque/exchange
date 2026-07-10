@@ -1,18 +1,18 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { Asset } from '../models/asset.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AssetService {
-  private mockAssets: Asset[] = [
-    { ticker: 'PETR4', name: 'Petrobras' },
-    { ticker: 'VALE3', name: 'Vale' },
-    { ticker: 'VIIA4', name: 'Via' }
-  ];
+  private readonly apiUrl = `${environment.urlBase}/api/symbols`;
+
+  constructor(private http: HttpClient) {}
 
   getAssets(): Observable<Asset[]> {
-    return of(this.mockAssets);
+    return this.http.get<Asset[]>(this.apiUrl);
   }
 }

@@ -1,6 +1,7 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { OrderService } from '../../../../core/services/order.service';
 import { AssetService } from '../../../../core/services/asset.service';
 import { Order } from '../../../../core/models/order.model';
@@ -13,7 +14,8 @@ import { Asset } from '../../../../core/models/asset.model';
   templateUrl: './order-form.component.html',
   styleUrls: ['./order-form.component.css']
 })
-export class OrderFormComponent implements OnInit {
+export class OrderFormComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   isLoading = signal(false);
   feedbackMessage = signal<{ text: string; type: 'success' | 'error' } | null>(null);
   assets = signal<Asset[]>([]);
@@ -48,13 +50,20 @@ export class OrderFormComponent implements OnInit {
   }
 
   private loadAssets(): void {
-    this.assetService.getAssets().subscribe(data => this.assets.set(data));
+    this.assetService.getAssets()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => this.assets.set(data));
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private priceStepValidator(step: number) {
     return (control: AbstractControl): ValidationErrors | null => {
       if (!control.value) return null;
-      const value = parseFloat(control.value);
+      const value = Math.round(parseFloat(control.value) * 100) / 100;
       const remainder = value % step;
       const isStepValid = Math.abs(remainder) < 0.000001 || Math.abs(step - remainder) < 0.000001;
       return isStepValid ? null : { step: { value: step } };
